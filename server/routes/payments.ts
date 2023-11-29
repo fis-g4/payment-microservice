@@ -1,4 +1,7 @@
 import express, { Request, Response } from 'express'
+import { Payment } from '../db/models/payment'
+import { getPlanById } from '../mocks/plans.mock'
+import { getUserById } from '../mocks/users.mock'
 
 const router = express.Router()
 
@@ -8,11 +11,28 @@ router.post(
         const { planId, userId } = req.params
 
         // Step 1: Fetch the plan from the database
+        const plan = getPlanById(planId)
+        if (!plan) {
+            return res.status(404).json({ error: 'Plan not found' })
+        }
         // Step 2: Fetch the user from the database
+        const user = getUserById(userId)
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' })
+        }
         // Step 3: Create a payment record
+        const payment = Payment.build({
+            amount: plan.price,
+            currency: plan.currency,
+            referenceId: plan.id,
+            referenceType: 'plan',
+            status: 'pending',
+            userId: user.id,
+        })
         // Step 4: Return the payment record
+        await payment.save()
 
-        return res.status(200).json({ planId, userId })
+        return res.status(200).json({ payment })
     }
 )
 

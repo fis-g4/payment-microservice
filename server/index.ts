@@ -1,8 +1,9 @@
-import express, { Express, Request, Response } from 'express'
 import cors from 'cors'
-import users from './routes/users'
-import './loadEnvironment'
+import express, { Express, Request, Response } from 'express'
 import './db/conn'
+import './loadEnvironment'
+import payments from './routes/payments'
+import users from './routes/users'
 
 const app: Express = express()
 
@@ -20,3 +21,4 @@ app.listen(port, () => {
 })
 
 app.use('/users', users)
+app.use('/payments', payments)

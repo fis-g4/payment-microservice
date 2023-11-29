@@ -53,3 +53,5 @@ router.get('/users/:userId', async (req: Request, res: Response) => {
 
     return res.status(200).json({ userId })
 })
+
+export default router

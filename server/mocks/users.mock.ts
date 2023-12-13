@@ -4,12 +4,14 @@ const users = [
         firstName: 'John',
         lastName: 'Doe',
         email: 'john@gmail.com',
+        roles: ['admin', 'user'],
     },
     {
         id: '2',
         firstName: 'Jane',
         lastName: 'Doe',
         email: 'jane@gmail.com',
+        roles: ['user'],
     },
 ]
 

@@ -2,16 +2,19 @@ import mongoose from 'mongoose'
 
 const { Schema } = mongoose
 
-interface IUser{
+interface IUser {
     name: string;
     email: string;
     password: string;
+    roles: string[]; 
+    
 }
 
 interface UserDoc extends mongoose.Document {
     name: string;
     email: string;
     password: string;
+    roles: string[]; 
 }
 
 interface UserModelInterface extends mongoose.Model<UserDoc> {
@@ -30,6 +33,10 @@ const userSchema = new Schema({
     },
     password: {
         type: String,
+        //required: true,
+    },
+    roles: {
+        type: [String],
         //required: true,
     },
 })

@@ -1,14 +1,13 @@
 import cors from 'cors'
 import express, { Express, Request, Response } from 'express'
-import './loadEnvironment'
-import './db/conn'
-import payments from './routes/payments'
-import users from './routes/users'
-import plans from './routes/plans'
 import swaggerjsdoc from 'swagger-jsdoc'
 import swaggerui from 'swagger-ui-express'
+import './db/conn'
+import './loadEnvironment'
+import payments from './routes/payments'
+import users from './routes/users'
 
-const app: Express = express()
+export const app: Express = express()
 
 app.use(express.json())
 app.use(cors())
@@ -71,7 +70,7 @@ app.listen(port, () => {
 
 app.use('/users', users)
 app.use('/payments', payments)
-app.use('/plans', plans)
+// app.use('/plans', plans)
 app.use(
     '/v1/docs/',
     swaggerUI.serve,

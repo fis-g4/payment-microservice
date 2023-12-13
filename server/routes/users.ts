@@ -29,7 +29,8 @@ router.post('/', async (req: Request, res: Response) => {
   const user = User.build({
     name: name, 
     email: email, 
-    password: password});
+    password: password,
+    roles: ["user"]});
 
   await user.save();
 

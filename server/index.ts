@@ -1,14 +1,18 @@
 import cors from 'cors'
+import dotenv from 'dotenv'
 import express, { Express, Request, Response } from 'express'
-import './loadEnvironment'
-import './db/conn'
-import payments from './routes/payments'
-import users from './routes/users'
-import plans from './routes/plans'
+import fs from 'fs'
 import swaggerjsdoc from 'swagger-jsdoc'
 import swaggerui from 'swagger-ui-express'
+import yaml from 'yaml'
+import './db/conn'
+import './loadEnvironment'
+import payments from './routes/payments'
+import users from './routes/users'
 
-const app: Express = express()
+dotenv.config()
+
+export const app: Express = express()
 
 app.use(express.json())
 app.use(cors())
@@ -23,9 +27,9 @@ const swaggerOptions = {
             version: '1.0.0',
             title: 'Payment Microservice API',
             description:
-                'API for the users microservice of the FIS-G4 project.',
+                'API for the payments microservice of the FIS-G4 project.',
             contact: {
-                name: 'Vicente Cambrón Tocados & Youseff Laccouf',
+                name: 'Youssef Lakouifat',
                 email: '',
                 url: 'https://github.com/fis-g4/payment-microservice',
             },
@@ -36,28 +40,31 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.BASE_URL ?? 'http://localhost:8000/v1/',
+                url: process.env.BASE_URL ?? 'http://localhost:8000',
             },
         ],
         components: {
-            // securitySchemes: {
-            //     bearerAuth: {
-            //         type: 'http',
-            //         scheme: 'bearer',
-            //         bearerFormat: 'JWT',
-            //     },
-            // },
+            securitySchemes: {
+                bearerAuth: {
+                    type: 'http',
+                    scheme: 'bearer',
+                    bearerFormat: 'JWT',
+                },
+            },
         },
         security: [
-            // {
-            //     bearerAuth: [],
-            // },
+            {
+                bearerAuth: [],
+            },
         ],
     },
     apis: ['./routes/payments.ts', './routes/plans.ts'],
 }
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions)
+
+const yamlString: string = yaml.stringify(swaggerDocs, {})
+fs.writeFileSync('./docs/swagger.yaml', yamlString)
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Hello World From the Typescript Server!')
@@ -71,7 +78,7 @@ app.listen(port, () => {
 
 app.use('/users', users)
 app.use('/payments', payments)
-app.use('/plans', plans)
+// app.use('/plans', plans)
 app.use(
     '/v1/docs/',
     swaggerUI.serve,

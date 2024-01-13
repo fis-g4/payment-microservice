@@ -1,17 +1,11 @@
-import populateDB from './populateInitial';
 import mongoose from 'mongoose'
 
-mongoose
-    .connect(`${process.env.DB_URI ?? ''}`,
-    {
-        dbName: `${process.env.DB_NAME ?? ''}`,
-        user: `${process.env.DB_USER ?? ''}`,
-        pass: `${process.env.DB_PASS ?? ''}`,
-    })
-    .then(() => {
-        console.log('Connected to MongoDB')
-        populateDB();
-    })
-    .catch((err) => {
-        console.log(err)
-    })
+const dbUri = process.env.DB_URI as string
+try {
+    console.log('Connecting to MongoDB: ' + dbUri)
+    mongoose.connect('mongodb://127.0.0.1:27017/?directConnection=true')
+} catch (err) {
+    console.log('Error connecting to MongoDB')
+
+    console.log(err)
+}

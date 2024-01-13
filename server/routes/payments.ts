@@ -8,10 +8,8 @@ import { getCourseById } from '../mocks/courses.mock'
 const router = express.Router()
 
 const stripeConnection = {
-    secret_key:
-        'sk_test_51OXsgTISDBC7fkZuLw1pwE7249wluuvRnstv9uMmQkbWOU4TQXlixTiHSly0d2K4I4EtLqAWE25Y82JXmMhSn0Mu008EMn25A2',
-    publishable_key:
-        'pk_test_51OXsgTISDBC7fkZurQeBgzi2BdqnreHI09SneCemzY9bKOYQcuR6Ha8GjhmobvD6L1qVc0E2KwTCz7gy9w5S3sik00NnJGLCKt',
+    secret_key: process.env.STRIPE_SECRET_KEY || 'sk_test',
+    publishable_key: process.env.STRIPE_PUBLIC_KEY || 'pk_test',
 }
 
 const stripe = require('stripe')(stripeConnection.secret_key)

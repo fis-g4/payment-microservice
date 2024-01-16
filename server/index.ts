@@ -1,6 +1,6 @@
 import cors from 'cors'
 import dotenv from 'dotenv'
-import express, { Express, Request, Response } from 'express'
+import express, { Express, NextFunction, Request, Response } from 'express'
 import fs from 'fs'
 import swaggerjsdoc from 'swagger-jsdoc'
 import swaggerui from 'swagger-ui-express'
@@ -9,6 +9,7 @@ import './db/conn'
 import './loadEnvironment'
 import payments from './routes/payments'
 import users from './routes/users'
+import { generateToken, verifyToken } from './utils/jwt'
 
 dotenv.config()
 
@@ -71,6 +72,31 @@ app.get('/', (req: Request, res: Response) => {
 })
 
 const port = process.env.PORT ?? 8000
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+    const bearerHeader = req.headers['authorization'] as string
+    const bearerToken = bearerHeader?.split(' ')[1]
+
+    verifyToken(req.url, bearerToken)
+        .then((payload) => {
+            if (payload !== undefined) {
+                generateToken(payload)
+                    .then((token) => {
+                        res.setHeader('Authorization', `Bearer ${token}`)
+                        next()
+                    })
+                    .catch((err) => {
+                        console.log(err)
+                        res.status(401).send(err)
+                    })
+            } else {
+                next()
+            }
+        })
+        .catch((err) => {
+            res.status(err.statusCode).json(err.message)
+        })
+})
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)

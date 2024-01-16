@@ -1,9 +1,8 @@
 import express, { Request, Response } from 'express'
 import { Payment } from '../db/models/payment'
 import { PricePlan } from '../db/models/plan'
-import { User } from '../db/models/user'
-import { UserPayment } from '../db/models/userPayment'
 import { getCourseById } from '../mocks/courses.mock'
+import { UserService } from '../service/user'
 
 const router = express.Router()
 
@@ -23,7 +22,7 @@ const stripe = require('stripe')(stripeConnection.secret_key)
 
 /**
  * @swagger
- * /payments/plans/{planId}/users/{userId}:
+ * /payments/plans/{planId}/users/{username}:
  *   post:
  *     summary: Create a payment record for a user's plan
  *     tags:
@@ -34,7 +33,7 @@ const stripe = require('stripe')(stripeConnection.secret_key)
  *         required: true
  *         type: string
  *         description: ID of the plan
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
@@ -61,9 +60,9 @@ const stripe = require('stripe')(stripeConnection.secret_key)
  *           $ref: '#/definitions/Error500'
  */
 router.post(
-    '/plans/:planId/users/:userId',
+    '/plans/:planId/users/:username',
     async (req: Request, res: Response) => {
-        const { planId, userId } = req.params
+        const { planId, username } = req.params
 
         // Step 1: Fetch the plan from the database
         const plan = await PricePlan.findOne({
@@ -72,10 +71,12 @@ router.post(
         if (!plan) {
             return res.status(404).json({ error: 'Plan not found' })
         }
+
         // Step 2: Fetch the user from the database
-        const user = await User.findOne({
-            _id: userId,
-        }).exec()
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
         if (!user) {
             return res.status(404).json({ error: 'User not found' })
         }
@@ -83,7 +84,7 @@ router.post(
         // Step 3: Generate a Stripe Link
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: user.email,
+            customer_email: user.data.id,
             line_items: [
                 {
                     price_data: {
@@ -101,8 +102,6 @@ router.post(
             cancel_url: 'https://example.com/cancel',
         })
 
-        console.log(session)
-
         // Step 3: Create a payment record
         const payment = Payment.build({
             amount: plan.price,
@@ -110,31 +109,10 @@ router.post(
             referenceId: plan.id,
             referenceType: 'plan',
             status: 'pending',
-            userId: user.id,
+            userId: user.data.id,
         })
         // Step 4: Return the payment record
         await payment.save()
-
-        // Step 4 bis: Update the user's plan
-        const userPayment = await UserPayment.findOne({
-            userId: user.id,
-        }).exec()
-        if (!userPayment) {
-            const newUserPayment = UserPayment.build({
-                userId: user.id,
-                planId: plan.id,
-                coins: 0,
-                dateInit: new Date(),
-            })
-
-            await newUserPayment.save()
-
-            return res.status(200).json({ payment })
-        }
-
-        userPayment.planId = plan.id
-
-        await userPayment.save()
 
         return res.status(200).json({ payment, url: session.url })
     }
@@ -142,7 +120,7 @@ router.post(
 
 /**
  * @swagger
- * /courses/{courseId}/users/{userId}:
+ * /courses/{courseId}/users/{username}:
  *   post:
  *     summary: Create a payment record for a user's course enrollment
  *     tags:
@@ -153,7 +131,7 @@ router.post(
  *         required: true
  *         type: string
  *         description: ID of the course
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
@@ -176,9 +154,9 @@ router.post(
  *           $ref: '#/definitions/Error500'
  */
 router.post(
-    '/courses/:courseId/users/:userId',
+    '/courses/:courseId/users/:username',
     async (req: Request, res: Response) => {
-        const { courseId, userId } = req.params
+        const { courseId, username } = req.params
 
         // Step 1: Fetch the course from the database
         const course = getCourseById(courseId)
@@ -186,16 +164,17 @@ router.post(
             return res.status(404).json({ error: 'Course not found' })
         }
         // Step 2: Fetch the user from the database
-        const user = await User.findOne({
-            _id: userId,
-        }).exec()
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
         if (!user) {
             return res.status(404).json({ error: 'User not found' })
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: user.email,
+            customer_email: user?.data.email,
             line_items: [
                 {
                     price_data: {
@@ -220,7 +199,7 @@ router.post(
             referenceId: course.id,
             referenceType: 'course',
             status: 'pending',
-            userId: user.id,
+            userId: user.data.id,
         })
         // Step 4: Return the payment record
         await payment.save()
@@ -231,7 +210,7 @@ router.post(
 
 /**
  * @swagger
- * /materials/{materialId}/users/{userId}:
+ * /materials/{materialId}/users/{username}:
  *   post:
  *     summary: Create a payment record for a user's material purchase
  *     tags:
@@ -242,7 +221,7 @@ router.post(
  *         required: true
  *         type: string
  *         description: ID of the material
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
@@ -255,7 +234,7 @@ router.post(
  *           properties:
  *             materialId:
  *               type: string
- *             userId:
+ *             username:
  *               type: string
  *       404:
  *         description: Material or user not found
@@ -267,9 +246,9 @@ router.post(
  *           $ref: '#/definitions/Error500'
  */
 router.post(
-    '/materials/:materialId/users/:userId',
+    '/materials/:materialId/users/:username',
     async (req: Request, res: Response) => {
-        const { materialId, userId } = req.params
+        const { materialId, username } = req.params
 
         // Step 1: Fetch the material from the database
         const material = getCourseById(materialId)
@@ -277,16 +256,17 @@ router.post(
             return res.status(404).json({ error: 'Material not found' })
         }
         // Step 2: Fetch the user from the database
-        const user = await User.findOne({
-            _id: userId,
-        }).exec()
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
         if (!user) {
             return res.status(404).json({ error: 'User not found' })
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: user.email,
+            customer_email: user.data.email,
             line_items: [
                 {
                     price_data: {
@@ -311,24 +291,24 @@ router.post(
             referenceId: material.id,
             referenceType: 'material',
             status: 'pending',
-            userId: user.id,
+            userId: user.data.id,
         })
         // Step 4: Return the payment record
         await payment.save()
 
-        return res.status(200).json({ materialId, userId, url: session.url })
+        return res.status(200).json({ materialId, username, url: session.url })
     }
 )
 
 /**
  * @swagger
- * /history/users/{userId}:
+ * /history/users/{username}:
  *   get:
  *     summary: Get payment history for a user
  *     tags:
  *       - History
  *     parameters:
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
@@ -352,19 +332,21 @@ router.post(
  *         schema:
  *           $ref: '#/definitions/Error500'
  */
-router.get('/history/users/:userId', async (req: Request, res: Response) => {
-    const { userId } = req.params
+router.get('/history/users/:username', async (req: Request, res: Response) => {
+    const { username } = req.params
 
     // Step 1: Fetch the user from the database
-    const user = await User.findOne({
-        _id: userId,
-    }).exec()
+    const userService = new UserService()
+    const user = await userService
+        .login()
+        .then(() => userService.getUserByUsername(username))
     if (!user) {
         return res.status(404).json({ error: 'User not found' })
     }
+
     // Step 2: Fetch the payment records for the user
     const payments = await Payment.find({
-        userId: userId,
+        username: username,
     })
     if (!payments) {
         return res.status(404).json({ error: 'Payments not found' })
@@ -375,7 +357,7 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /{paymentId}/user/{userId}:
+ * /{paymentId}/user/{username}:
  *   get:
  *     summary: Get a specific payment record for a user
  *     tags:
@@ -386,7 +368,7 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
  *         required: true
  *         type: string
  *         description: ID of the payment record
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
@@ -408,26 +390,29 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
  *         schema:
  *           $ref: '#/definitions/Error500'
  */
-router.get('/:paymentId/user/:userId', async (req: Request, res: Response) => {
-    const { paymentId, userId } = req.params
+router.get(
+    '/:paymentId/user/:username',
+    async (req: Request, res: Response) => {
+        const { paymentId, username } = req.params
 
-    // Step 1: Fetch the user from the database
-    const user = await User.findOne({
-        _id: userId,
-    }).exec()
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' })
+        // Step 1: Fetch the user from the database
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' })
+        }
+        // Step 2: Fetch the payment record from the database
+        const payment = await Payment.findOne({
+            _id: paymentId,
+        }).exec()
+        if (!payment) {
+            return res.status(404).json({ error: 'Payment not found' })
+        }
+        // Step 3: Return the payment record
+        return res.status(200).json({ payment })
     }
-    // Step 2: Fetch the payment record from the database
-    const payment = await Payment.findOne({
-        _id: paymentId,
-        userId: userId,
-    }).exec()
-    if (!payment) {
-        return res.status(404).json({ error: 'Payment not found' })
-    }
-    // Step 3: Return the payment record
-    return res.status(200).json({ payment })
-})
+)
 
 export default router

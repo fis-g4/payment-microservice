@@ -9,7 +9,6 @@ import './db/conn'
 import './loadEnvironment'
 import payments from './routes/payments'
 import users from './routes/users'
-import { generateToken, verifyToken } from './utils/jwt'
 
 dotenv.config()
 
@@ -67,9 +66,7 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions)
 const yamlString: string = yaml.stringify(swaggerDocs, {})
 fs.writeFileSync('./docs/swagger.yaml', yamlString)
 
-app.get('/', (req: Request, res: Response) => {
-    res.send('Hello World From the Typescript Server!')
-})
+app.get('/', (req: Request, res: Response) => {})
 
 const port = process.env.PORT ?? 8000
 
@@ -77,25 +74,27 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const bearerHeader = req.headers['authorization'] as string
     const bearerToken = bearerHeader?.split(' ')[1]
 
-    verifyToken(req.url, bearerToken)
-        .then((payload) => {
-            if (payload !== undefined) {
-                generateToken(payload)
-                    .then((token) => {
-                        res.setHeader('Authorization', `Bearer ${token}`)
-                        next()
-                    })
-                    .catch((err) => {
-                        console.log(err)
-                        res.status(401).send(err)
-                    })
-            } else {
-                next()
-            }
-        })
-        .catch((err) => {
-            res.status(err.statusCode).json(err.message)
-        })
+    // verifyToken(req.url, bearerToken)
+    //     .then((payload) => {
+    //         if (payload !== undefined) {
+    //             generateToken(payload)
+    //                 .then((token) => {
+    //                     res.setHeader('Authorization', `Bearer ${token}`)
+    //                     next()
+    //                 })
+    //                 .catch((err) => {
+    //                     console.log(err)
+    //                     res.status(401).send(err)
+    //                 })
+    //         } else {
+    //             next()
+    //         }
+    //     })
+    //     .catch((err) => {
+    //         res.status(err.statusCode).json(err.message)
+    //     })
+
+    next()
 })
 
 app.listen(port, () => {

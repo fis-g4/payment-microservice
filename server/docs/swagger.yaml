@@ -21,7 +21,7 @@ components:
 security:
   - bearerAuth: []
 paths:
-  /payments/plans/{planId}/users/{userId}:
+  /payments/plans/{planId}/users/{username}:
     post:
       summary: Create a payment record for a user's plan
       tags:
@@ -32,7 +32,7 @@ paths:
           required: true
           type: string
           description: ID of the plan
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
@@ -57,7 +57,7 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /courses/{courseId}/users/{userId}:
+  /courses/{courseId}/users/{username}:
     post:
       summary: Create a payment record for a user's course enrollment
       tags:
@@ -68,7 +68,7 @@ paths:
           required: true
           type: string
           description: ID of the course
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
@@ -89,7 +89,7 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /materials/{materialId}/users/{userId}:
+  /materials/{materialId}/users/{username}:
     post:
       summary: Create a payment record for a user's material purchase
       tags:
@@ -100,7 +100,7 @@ paths:
           required: true
           type: string
           description: ID of the material
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
@@ -113,7 +113,7 @@ paths:
             properties:
               materialId:
                 type: string
-              userId:
+              username:
                 type: string
         "404":
           description: Material or user not found
@@ -123,13 +123,13 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /history/users/{userId}:
+  /history/users/{username}:
     get:
       summary: Get payment history for a user
       tags:
         - History
       parameters:
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
@@ -152,7 +152,7 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /{paymentId}/user/{userId}:
+  /{paymentId}/user/{username}:
     get:
       summary: Get a specific payment record for a user
       tags:
@@ -163,7 +163,7 @@ paths:
           required: true
           type: string
           description: ID of the payment record
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string

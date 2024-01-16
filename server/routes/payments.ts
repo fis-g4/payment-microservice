@@ -2,7 +2,6 @@ import express, { Request, Response } from 'express'
 import { Payment } from '../db/models/payment'
 import { PricePlan } from '../db/models/plan'
 import { User } from '../db/models/user'
-import { UserPayment } from '../db/models/userPayment'
 import { getCourseById } from '../mocks/courses.mock'
 
 const router = express.Router()
@@ -114,27 +113,6 @@ router.post(
         })
         // Step 4: Return the payment record
         await payment.save()
-
-        // Step 4 bis: Update the user's plan
-        const userPayment = await UserPayment.findOne({
-            userId: user.id,
-        }).exec()
-        if (!userPayment) {
-            const newUserPayment = UserPayment.build({
-                userId: user.id,
-                planId: plan.id,
-                coins: 0,
-                dateInit: new Date(),
-            })
-
-            await newUserPayment.save()
-
-            return res.status(200).json({ payment })
-        }
-
-        userPayment.planId = plan.id
-
-        await userPayment.save()
 
         return res.status(200).json({ payment, url: session.url })
     }

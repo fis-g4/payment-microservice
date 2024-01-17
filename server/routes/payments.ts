@@ -15,6 +15,19 @@ const stripe = require('stripe')(stripeConnection.secret_key)
 
 /**
  * @swagger
+ * /payments/health:
+ * get:
+ *  summary: Health check for the payments API
+ * tags:
+ * - Payments
+ */
+
+router.get('/health', async (req: Request, res: Response) => {
+    return res.status(200).json({ status: 'ok' })
+})
+
+/**
+ * @swagger
  * tags:
  *   name: Payments
  *   description: Payments management API

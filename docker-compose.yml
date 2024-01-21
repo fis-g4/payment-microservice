@@ -1,18 +1,6 @@
 version: '3'
 
 services:
-    # redis:
-    #   restart: always
-    #   container_name: flatter-redis
-    #   image: redis:alpine
-    #   command: redis-server --appendonly yes
-    #   volumes:
-    #     - redis-data:/data
-    #   expose:
-    #     - 6379
-    #   networks:
-    #     - sample-microservice
-
     mongo-db:
         image: mongo:6.0
         container_name: mongo-db
@@ -34,29 +22,10 @@ services:
         build:
             context: .
             dockerfile: server/docker/Dockerfile
-        # command: bash -c "/usr/src/app/flatter-backend/entrypoint.sh  && daphne -b 0.0.0.0 -p 8000 backend.asgi:application"
-        environment:
-            DB_URI: mongodb://mongo-db:27017
-        #   DJANGO_ENV: ${DJANGO_ENV}
-        #   DJANGO_ADMIN_USER: ${DJANGO_ADMIN_USER}
-        #   DJANGO_ADMIN_EMAIL: ${DJANGO_ADMIN_EMAIL}
-        #   DJANGO_ADMIN_PASSWORD: ${DJANGO_ADMIN_PASSWORD}
-        #   SECRET_KEY: ${SECRET_KEY}
-        #   DB_ENGINE: ${DB_ENGINE}
-        #   DB_DATABASE: ${DB_DATABASE}
-        #   DB_USER: ${DB_USER}
-        #   DB_PASSWORD: ${DB_PASSWORD}
-        #   DB_HOST: ${DB_HOST}
-
-        # volumes:
-        #   - static:/usr/src/app/flatter-backend/static
-        #   - static:/usr/src/app/flatter-backend/media
         expose:
             - 8000
         depends_on:
             - mongo_db
-        # links:
-        #   - redis
         networks:
             - payment-network
 
@@ -67,9 +36,6 @@ services:
         build:
             context: ./nginx
             dockerfile: ./Dockerfile
-        # volumes:
-        #   - static:/usr/src/app/flatter-backend/static
-        #   - static:/usr/src/app/flatter-backend/media
         ports:
             - 80:80
         depends_on:
@@ -78,17 +44,9 @@ services:
         networks:
             - sample-microservice
 
-# volumes:
-#   static:
-#     name: flatter-static
-#   redis-data:
-#     name: flatter-redis-data
-
 volumes:
     db:
         name: payment-service-db
-    # redis-data:
-    #   name: flatter-redis-data
 
 networks:
     sample-microservice:

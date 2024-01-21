@@ -32,22 +32,6 @@ services:
             - mongo-db
         networks:
             - payment-service-network
-
-    nginx:
-        restart: always
-        container_name: payment-service-nginx
-        image: payment-service-nginx:latest
-        build:
-            context: ./nginx
-            dockerfile: ./Dockerfile
-        ports:
-            - 80:80
-        depends_on:
-            - server
-            - mongo-db
-        networks:
-            - payment-service-network
-
 volumes:
     db:
         name: payment-service-db

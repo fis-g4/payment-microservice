@@ -79,8 +79,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     const bearerHeader = req.headers['authorization'] as string
     const bearerToken = bearerHeader?.split(' ')[1]
 
-    // If url is /v1/payments/docs, then skip the token verification
-    if (req.url === '/v1/payments/docs/' || req.url === '/v1/payments/check') {
+    // If url starts with /v1/payments/docs, then skip the token verification
+    const regexDocs = new RegExp('/v1/payments/docs/.*')
+    if (regexDocs.test(req.url) || req.url === '/v1/payments/check') {
         next()
         return
     }

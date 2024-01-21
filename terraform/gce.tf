@@ -12,7 +12,7 @@ resource "google_compute_instance" "payment_service_instance" {
   }
 
   network_interface {
-    subnetwork = google_compute_subnetwork.payment-service-subnetwork.id
+    subnetwork = google_compute_subnetwork.payment_service_subnetwork.id
 
     access_config {
     }

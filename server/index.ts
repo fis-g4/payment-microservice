@@ -81,7 +81,6 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
     // If url is /v1/payments/docs, then skip the token verification
     if (req.url === '/v1/payments/docs/' || req.url === '/v1/payments/check') {
-        console.log('Skipping token verification for /v1/payments/docs')
         next()
         return
     }

@@ -13,7 +13,7 @@ services:
         volumes:
             - db:/data/db
         networks:
-            - payment-service
+            - payment-service-network
 
     server:
         restart: always
@@ -22,12 +22,16 @@ services:
         build:
             context: .
             dockerfile: server/docker/Dockerfile
+        environment:
+            DB_URI: mongodb://mongo-db:27017
         expose:
             - 8000
+        ports:
+            - 8000:8000
         depends_on:
-            - mongo_db
+            - mongo-db
         networks:
-            - payment-network
+            - payment-service-network
 
     nginx:
         restart: always
@@ -40,16 +44,16 @@ services:
             - 80:80
         depends_on:
             - server
-            - mongo_db
+            - mongo-db
         networks:
-            - payment-service
+            - payment-service-network
 
 volumes:
     db:
         name: payment-service-db
 
 networks:
-    payment-service:
+    payment-service-network:
         driver: bridge
         ipam:
             driver: default

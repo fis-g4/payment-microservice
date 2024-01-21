@@ -1,6 +1,5 @@
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
-import { populatePlans } from './populateInitial'
 
 dotenv.config()
 
@@ -11,7 +10,6 @@ async function connectToMongoDB() {
         await mongoose.connect(dbUri, {
             dbName: 'fis',
         })
-        populatePlans()
     } catch (err) {
         console.log('Error connecting to MongoDB')
         console.log(err)

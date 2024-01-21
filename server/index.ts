@@ -68,7 +68,9 @@ const yamlString: string = yaml.stringify(swaggerDocs, {})
 fs.writeFileSync('./docs/swagger.yaml', yamlString)
 
 app.get(API_VERSION, (req: Request, res: Response) => {
-    res.send('Hello World From the Typescript Server!')
+    res.send({
+        message: 'Hello World!',
+    })
 })
 
 const port = process.env.PORT ?? 8000
@@ -76,6 +78,13 @@ const port = process.env.PORT ?? 8000
 app.use((req: Request, res: Response, next: NextFunction) => {
     const bearerHeader = req.headers['authorization'] as string
     const bearerToken = bearerHeader?.split(' ')[1]
+
+    // If url is /v1/payments/docs, then skip the token verification
+    if (req.url === '/v1/payments/docs/' || req.url === '/v1/payments/check') {
+        console.log('Skipping token verification for /v1/payments/docs')
+        next()
+        return
+    }
 
     verifyToken(req.url, bearerToken)
         .then((payload) => {
@@ -102,11 +111,11 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
 
-app.use(API_VERSION + '/users', users)
-app.use(API_VERSION + '/payments', payments)
-// app.use('/plans', plans)
 app.use(
-    '/v1/docs/',
+    '/v1/payments/docs/',
     swaggerUI.serve,
     swaggerUI.setup(swaggerDocs, { explorer: true })
 )
+app.use(API_VERSION + '/users', users)
+app.use(API_VERSION + '/payments', payments)
+// app.use('/plans', plans)

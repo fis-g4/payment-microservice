@@ -5,15 +5,15 @@ services:
         image: mongo:6.0
         container_name: mongo-db
         environment:
-            - MONGO_INITDB_ROOT_USERNAME=root
-            - MONGO_INITDB_ROOT_PASSWORD=password
-            - MONGO_INITDB_DATABASE=sample-db
+            - MONGO_INITDB_ROOT_USERNAME=${DB_USER}
+            - MONGO_INITDB_ROOT_PASSWORD=${DB_PASSWORD}
+            - MONGO_INITDB_DATABASE=${DB_NAME}
         ports:
             - '27017:27017'
         volumes:
             - db:/data/db
         networks:
-            - sample-microservice
+            - payment-service
 
     server:
         restart: always
@@ -42,16 +42,16 @@ services:
             - server
             - mongo_db
         networks:
-            - sample-microservice
+            - payment-service
 
 volumes:
     db:
         name: payment-service-db
 
 networks:
-    sample-microservice:
+    payment-service:
         driver: bridge
         ipam:
             driver: default
             config:
-                - subnet: 10.5.0.0/16
+                - subnet: 10.11.0.0/16

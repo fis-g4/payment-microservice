@@ -47,6 +47,4 @@ resource "google_compute_instance" "payment_service_instance" {
   echo $GOOGLE_APPLICATION_CREDENTIALS > GoogleCloudKey.json
   sudo docker compose up -d
   EOF
-
-  depends_on = [google_compute_firewall.fis_g4_firewall_cd, google_compute_firewall.fis_g4_allow_health_check, google_compute_firewall.fis_g4_allow_health_check_https, google_compute_firewall.fis_g4_iap]
 }

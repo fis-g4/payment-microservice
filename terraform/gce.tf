@@ -47,4 +47,6 @@ resource "google_compute_instance" "payment_service_instance" {
   echo $GOOGLE_APPLICATION_CREDENTIALS > GoogleCloudKey.json
   sudo docker compose up -d
   EOF
+
+  depends_on = []
 }

@@ -1,20 +1,6 @@
 version: '3'
 
 services:
-    mongo-db:
-        image: mongo:6.0
-        container_name: mongo-db
-        environment:
-            - MONGO_INITDB_ROOT_USERNAME=root
-            - MONGO_INITDB_ROOT_PASSWORD=password
-            - MONGO_INITDB_DATABASE=db
-        ports:
-            - '27017:27017'
-        volumes:
-            - db:/data/db
-        networks:
-            - payment-service-network
-
     server:
         restart: always
         container_name: payment-service-backend
@@ -22,24 +8,7 @@ services:
         build:
             context: .
             dockerfile: server/docker/Dockerfile
-        environment:
-            DB_URI: mongodb://mongo-db:27017
         expose:
             - 8000
         ports:
             - 8000:8000
-        depends_on:
-            - mongo-db
-        networks:
-            - payment-service-network
-volumes:
-    db:
-        name: payment-service-db
-
-networks:
-    payment-service-network:
-        driver: bridge
-        ipam:
-            driver: default
-            config:
-                - subnet: 10.5.0.0/16

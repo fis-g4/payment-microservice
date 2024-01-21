@@ -5,7 +5,7 @@ FROM node:21.1-slim
 WORKDIR /usr/src/server
 
 # Copy the rest of the application source code to the container
-COPY ./server .
+COPY ./. .
 COPY ./GoogleCloudKey.json ..
 COPY ./.env .
 

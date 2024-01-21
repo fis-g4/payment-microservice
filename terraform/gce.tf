@@ -39,6 +39,8 @@ resource "google_compute_instance" "payment_service_instance" {
   cd /home/${var.user}
   git clone https://github.com/fis-g4/payment-microservice.git
   cd payment-microservice
+  git checkout develop
+  git pull
   export ENV_CONFIGURATION="${file(".env.prod")}"
   export GOOGLE_APPLICATION_CREDENTIALS='${file("GoogleCloudKey.json")}'
   echo "$ENV_CONFIGURATION" > .env

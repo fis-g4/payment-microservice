@@ -13,6 +13,7 @@ import { generateToken, verifyToken } from './utils/jwt'
 dotenv.config()
 
 export const app: Express = express()
+const API_VERSION = '/v1'
 
 app.use(express.json())
 app.use(cors())
@@ -66,7 +67,7 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions)
 const yamlString: string = yaml.stringify(swaggerDocs, {})
 fs.writeFileSync('./docs/swagger.yaml', yamlString)
 
-app.get('/', (req: Request, res: Response) => {
+app.get(API_VERSION, (req: Request, res: Response) => {
     res.send('Hello World From the Typescript Server!')
 })
 
@@ -101,8 +102,8 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
 
-app.use('/users', users)
-app.use('/payments', payments)
+app.use(API_VERSION + '/users', users)
+app.use(API_VERSION + '/payments', payments)
 // app.use('/plans', plans)
 app.use(
     '/v1/docs/',

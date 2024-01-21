@@ -7,7 +7,7 @@ WORKDIR /usr/src/server
 # Copy the rest of the application source code to the container
 COPY ./server .
 COPY ./GoogleCloudKey.json ..
-RUN mv .env.prod .env
+COPY ./.env .
 
 # Install Node.js dependencies
 RUN npm install

@@ -32,7 +32,7 @@ jobs:
                   ssh-keygen -f .ssh/paymentService -t rsa -N ""
                   echo "$GCP_CREDENTIALS" | base64 --decode > GoogleCloudKey.json
                   echo "$TERRAFORM_VARS" | base64 --decode > terraform.tfvars
-                  echo "$ENV_CONFIGURATION" | base64 --decode > .env
+                  echo "$ENV_CONFIGURATION" | base64 --decode > .env.prod
 
             - name: Terraform Format
               id: fmt

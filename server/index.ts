@@ -7,7 +7,9 @@ import swaggerui from 'swagger-ui-express'
 import yaml from 'yaml'
 import './db/conn'
 import payments from './routes/payments'
+import plans from './routes/plans'
 import users from './routes/users'
+
 import { generateToken, verifyToken } from './utils/jwt'
 
 dotenv.config()
@@ -118,4 +120,4 @@ app.use(
 )
 app.use(API_VERSION + '/users', users)
 app.use(API_VERSION + '/payments', payments)
-// app.use('/plans', plans)
+app.use(API_VERSION + '/plans', plans)

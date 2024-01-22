@@ -6,9 +6,9 @@ const router = express.Router()
  * @swagger
  * /plans:
  * get:
- *  summary: Health check for the payments API
+ *  summary: Get all plans
  * tags:
- * - Payments
+ * - Plans
  */
 
 router.get('/', async (req: Request, res: Response) => {

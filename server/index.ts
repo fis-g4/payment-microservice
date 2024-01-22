@@ -114,7 +114,7 @@ app.listen(port, () => {
 })
 
 app.use(
-    '/v1/payments/docs/',
+    '/v1/payments/docs',
     swaggerUI.serve,
     swaggerUI.setup(swaggerDocs, { explorer: true })
 )

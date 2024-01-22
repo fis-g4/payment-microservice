@@ -154,3 +154,10 @@ yarn-debug.log*
 yarn-error.log*
 
 GoogleCloudKey.json
+
+terraform/.env.prod
+.terraform/
+.terraform*
+.ssh/
+*.tfvars
+.terraform/

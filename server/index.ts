@@ -7,12 +7,15 @@ import swaggerui from 'swagger-ui-express'
 import yaml from 'yaml'
 import './db/conn'
 import payments from './routes/payments'
+import plans from './routes/plans'
 import users from './routes/users'
+
 import { generateToken, verifyToken } from './utils/jwt'
 
 dotenv.config()
 
 export const app: Express = express()
+const API_VERSION = '/v1'
 
 app.use(express.json())
 app.use(cors())
@@ -66,8 +69,10 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions)
 const yamlString: string = yaml.stringify(swaggerDocs, {})
 fs.writeFileSync('./docs/swagger.yaml', yamlString)
 
-app.get('/', (req: Request, res: Response) => {
-    res.send('Hello World From the Typescript Server!')
+app.get(API_VERSION, (req: Request, res: Response) => {
+    res.send({
+        message: 'Hello World!',
+    })
 })
 
 const port = process.env.PORT ?? 8000
@@ -75,6 +80,13 @@ const port = process.env.PORT ?? 8000
 app.use((req: Request, res: Response, next: NextFunction) => {
     const bearerHeader = req.headers['authorization'] as string
     const bearerToken = bearerHeader?.split(' ')[1]
+
+    // If url starts with /v1/payments/docs, then skip the token verification
+    const regexDocs = new RegExp('/v1/payments/docs/.*')
+    if (regexDocs.test(req.url) || req.url === '/v1/payments/check') {
+        next()
+        return
+    }
 
     verifyToken(req.url, bearerToken)
         .then((payload) => {
@@ -101,11 +113,11 @@ app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
 })
 
-app.use('/users', users)
-app.use('/payments', payments)
-// app.use('/plans', plans)
 app.use(
-    '/v1/docs/',
+    '/v1/payments/docs',
     swaggerUI.serve,
     swaggerUI.setup(swaggerDocs, { explorer: true })
 )
+app.use(API_VERSION + '/users', users)
+app.use(API_VERSION + '/payments', payments)
+app.use(API_VERSION + '/plans', plans)

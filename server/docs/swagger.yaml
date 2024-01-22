@@ -21,6 +21,9 @@ components:
 security:
   - bearerAuth: []
 paths:
+  /payments/health: {}
+  get:
+    summary: Health check for the payments API
   /payments/plans/{planId}/users/{userId}:
     post:
       summary: Create a payment record for a user's plan
@@ -185,5 +188,6 @@ paths:
           schema:
             $ref: "#/definitions/Error500"
 tags:
+  - Payments
   - name: Payments
     description: Payments management API

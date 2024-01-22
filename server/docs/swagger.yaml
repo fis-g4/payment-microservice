@@ -1,193 +1,194 @@
 openapi: 3.1.0
 info:
-  version: 1.0.0
-  title: Payment Microservice API
-  description: API for the payments microservice of the FIS-G4 project.
-  contact:
-    name: Youssef Lakouifat
-    email: ""
-    url: https://github.com/fis-g4/payment-microservice
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
+    version: 1.0.0
+    title: Payment Microservice API
+    description: API for the payments microservice of the FIS-G4 project.
+    contact:
+        name: Youssef Lakouifat
+        email: ''
+        url: https://github.com/fis-g4/payment-microservice
+    license:
+        name: MIT
+        url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:8000
+    - url: http://localhost:8000/v1/payments
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
 security:
-  - bearerAuth: []
+    - bearerAuth: []
 paths:
-  /payments/health: {}
-  get:
-    summary: Health check for the payments API
-  /payments/plans/{planId}/users/{userId}:
-    post:
-      summary: Create a payment record for a user's plan
-      tags:
-        - Payments
-      parameters:
-        - name: planId
-          in: path
-          required: true
-          type: string
-          description: ID of the plan
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment record created successfully
-          schema:
-            type: object
-            properties:
-              payment:
-                $ref: "#/definitions/Payment"
-        "400":
-          description: There was an error with the request
-          schema:
-            $ref: "#/definitions/Error400"
-        "404":
-          description: Plan or user not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
-  /courses/{courseId}/users/{userId}:
-    post:
-      summary: Create a payment record for a user's course enrollment
-      tags:
-        - Courses
-      parameters:
-        - name: courseId
-          in: path
-          required: true
-          type: string
-          description: ID of the course
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment record created successfully
-          schema:
-            type: object
-            properties:
-              payment:
-                $ref: "#/definitions/Payment"
-        "404":
-          description: Course or user not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
-  /materials/{materialId}/users/{userId}:
-    post:
-      summary: Create a payment record for a user's material purchase
-      tags:
-        - Materials
-      parameters:
-        - name: materialId
-          in: path
-          required: true
-          type: string
-          description: ID of the material
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment record created successfully
-          schema:
-            type: object
-            properties:
-              materialId:
-                type: string
-              userId:
-                type: string
-        "404":
-          description: Material or user not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
-  /history/users/{userId}:
+    /payments/health: {}
     get:
-      summary: Get payment history for a user
-      tags:
-        - History
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment history retrieved successfully
-          schema:
-            type: object
-            properties:
-              payments:
-                type: array
-                items:
-                  $ref: "#/definitions/Payment"
-        "404":
-          description: User or payments not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
-  /{paymentId}/user/{userId}:
-    get:
-      summary: Get a specific payment record for a user
-      tags:
-        - Payments
-      parameters:
-        - name: paymentId
-          in: path
-          required: true
-          type: string
-          description: ID of the payment record
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment record retrieved successfully
-          schema:
-            type: object
-            properties:
-              payment:
-                $ref: "#/definitions/Payment"
-        "404":
-          description: User or payment not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
+        summary: Health check for the payments API
+    /payments/plans/{planId}/users/{userId}:
+        post:
+            summary: Create a payment record for a user's plan
+            tags:
+                - Payments
+            parameters:
+                - name: planId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the plan
+                - name: userId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the user
+            responses:
+                '200':
+                    description: Payment record created successfully
+                    schema:
+                        type: object
+                        properties:
+                            payment:
+                                $ref: '#/definitions/Payment'
+                '400':
+                    description: There was an error with the request
+                    schema:
+                        $ref: '#/definitions/Error400'
+                '404':
+                    description: Plan or user not found
+                    schema:
+                        $ref: '#/definitions/Error404'
+                '500':
+                    description: Some server error
+                    schema:
+                        $ref: '#/definitions/Error500'
+    /courses/{courseId}/users/{userId}:
+        post:
+            summary: Create a payment record for a user's course enrollment
+            tags:
+                - Courses
+            parameters:
+                - name: courseId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the course
+                - name: userId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the user
+            responses:
+                '200':
+                    description: Payment record created successfully
+                    schema:
+                        type: object
+                        properties:
+                            payment:
+                                $ref: '#/definitions/Payment'
+                '404':
+                    description: Course or user not found
+                    schema:
+                        $ref: '#/definitions/Error404'
+                '500':
+                    description: Some server error
+                    schema:
+                        $ref: '#/definitions/Error500'
+    /materials/{materialId}/users/{userId}:
+        post:
+            summary: Create a payment record for a user's material purchase
+            tags:
+                - Materials
+            parameters:
+                - name: materialId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the material
+                - name: userId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the user
+            responses:
+                '200':
+                    description: Payment record created successfully
+                    schema:
+                        type: object
+                        properties:
+                            materialId:
+                                type: string
+                            userId:
+                                type: string
+                '404':
+                    description: Material or user not found
+                    schema:
+                        $ref: '#/definitions/Error404'
+                '500':
+                    description: Some server error
+                    schema:
+                        $ref: '#/definitions/Error500'
+    /history/users/{userId}:
+        get:
+            summary: Get payment history for a user
+            tags:
+                - History
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the user
+            responses:
+                '200':
+                    description: Payment history retrieved successfully
+                    schema:
+                        type: object
+                        properties:
+                            payments:
+                                type: array
+                                items:
+                                    $ref: '#/definitions/Payment'
+                '404':
+                    description: User or payments not found
+                    schema:
+                        $ref: '#/definitions/Error404'
+                '500':
+                    description: Some server error
+                    schema:
+                        $ref: '#/definitions/Error500'
+    /{paymentId}/user/{userId}:
+        get:
+            summary: Get a specific payment record for a user
+            tags:
+                - Payments
+            parameters:
+                - name: paymentId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the payment record
+                - name: userId
+                  in: path
+                  required: true
+                  type: string
+                  description: ID of the user
+            responses:
+                '200':
+                    description: Payment record retrieved successfully
+                    schema:
+                        type: object
+                        properties:
+                            payment:
+                                $ref: '#/definitions/Payment'
+                '404':
+                    description: User or payment not found
+                    schema:
+                        $ref: '#/definitions/Error404'
+                '500':
+                    description: Some server error
+                    schema:
+                        $ref: '#/definitions/Error500'
+    /plans: {}
 tags:
-  - Payments
-  - name: Payments
-    description: Payments management API
+    - Payments
+    - name: Payments
+      description: Payments management API

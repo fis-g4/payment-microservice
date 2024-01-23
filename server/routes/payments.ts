@@ -3,6 +3,7 @@ import { isValidObjectId } from 'mongoose'
 import { Payment } from '../db/models/payment'
 import { PricePlan } from '../db/models/plan'
 import { getCourseById } from '../mocks/courses.mock'
+import { sendMessage } from '../rabbit/operations'
 import { CourseService } from '../service/courses'
 import { UserService } from '../service/user'
 
@@ -310,8 +311,8 @@ router.post(
                 },
             ],
             mode: 'payment',
-            success_url: 'https://example.com/success',
-            cancel_url: 'https://example.com/cancel',
+            success_url: 'https://fisg4.javiercavlop.com/',
+            cancel_url: 'https://fisg4.javiercavlop.com/',
         })
 
         // Step 3: Create a payment record and set the status to inactive for the previous plan
@@ -319,6 +320,15 @@ router.post(
             { userId: user.data.id, status: 'active' },
             { status: 'inactive' }
         )
+
+        let planName = ''
+        if (plan.name === 'Basic Plan') {
+            planName = 'BASIC'
+        } else if (plan.name === 'Advanced Plan') {
+            planName = 'ADVANCED'
+        } else if (plan.name === 'Pro Plan') {
+            planName = 'PRO'
+        }
 
         const payment = Payment.build({
             amount: plan.price,
@@ -330,6 +340,17 @@ router.post(
         })
         // Step 4: Return the payment record
         await payment.save()
+
+        await sendMessage(
+            'users_microservice',
+            'notificationNewPlanPayment',
+            JSON.stringify({
+                planName,
+                userId: user.data.id,
+                userName: username,
+            }),
+            process.env.API_KEY ?? ''
+        )
 
         return res.status(200).json({ planId, user, url: session.url })
     }

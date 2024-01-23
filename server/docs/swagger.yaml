@@ -120,6 +120,40 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
+  /plans/{planId}/users/{username}:
+    post:
+      summary: Create a payment record for a user plan purchase
+      tags:
+        - Plans
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          type: string
+          description: ID of the plan
+        - name: username
+          in: path
+          required: true
+          type: string
+          description: Username of the user
+      responses:
+        "200":
+          description: Payment record created successfully
+          schema:
+            type: object
+            properties:
+              materialId:
+                type: string
+              userId:
+                type: string
+        "404":
+          description: Plan or user not found
+          schema:
+            $ref: "#/definitions/Error404"
+        "500":
+          description: Some server error
+          schema:
+            $ref: "#/definitions/Error500"
   /history/users/{username}:
     get:
       summary: Get payment history for a user
@@ -151,7 +185,7 @@ paths:
             $ref: "#/definitions/Error500"
   /plans:
     get:
-      summary: Get all plans available for purchase
+      summary: Get all plans
       tags:
         - Plans
       responses:

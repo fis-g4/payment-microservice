@@ -1,8 +1,9 @@
 import express, { Request, Response } from 'express'
 import { Payment } from '../db/models/payment'
 import { PricePlan } from '../db/models/plan'
-import { User } from '../db/models/user'
 import { getCourseById } from '../mocks/courses.mock'
+import { CourseService } from '../service/courses'
+import { UserService } from '../service/user'
 
 const router = express.Router()
 
@@ -20,6 +21,16 @@ const stripe = require('stripe')(stripeConnection.secret_key)
  *  summary: Health check for the payments API
  * tags:
  * - Payments
+ * responses:
+ *  200:
+ *   description: Health check successful
+ *  schema:
+ *  type: object
+ * properties:
+ * status:
+ * type: string
+ * description: Status of the API
+ * example: ok
  */
 
 router.get('/check', async (req: Request, res: Response) => {
@@ -46,11 +57,11 @@ router.get('/check', async (req: Request, res: Response) => {
  *         required: true
  *         type: string
  *         description: ID of the course
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
- *         description: ID of the user
+ *         description: Username of the user
  *     responses:
  *       200:
  *         description: Payment record created successfully
@@ -69,30 +80,33 @@ router.get('/check', async (req: Request, res: Response) => {
  *           $ref: '#/definitions/Error500'
  */
 router.post(
-    '/courses/:courseId/users/:userId',
+    '/courses/:courseId/users/:username',
     async (req: Request, res: Response) => {
-        const { courseId, userId } = req.params
+        const { courseId, username } = req.params
 
         // Step 1: Fetch the course from the database
-        const course = getCourseById(courseId)
+        const courseService = new CourseService()
+        const course = await courseService.login().then(() => {
+            return courseService.getCourseById(courseId)
+        })
         if (!course) {
             return res.status(404).json({ error: 'Course not found' })
         }
         // Step 2: Fetch the user from the database
-        const user = await User.findOne({
-            _id: userId,
-        }).exec()
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
         if (!user) {
             return res.status(404).json({ error: 'User not found' })
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: user.email,
+            customer_email: user.data.email,
             line_items: [
                 {
                     price_data: {
-                        currency: course.currency,
                         product_data: {
                             name: course.name,
                         },
@@ -109,11 +123,11 @@ router.post(
         // Step 3: Create a payment record
         const payment = Payment.build({
             amount: course.price,
-            currency: course.currency,
+            currency: 'EUR',
             referenceId: course.id,
             referenceType: 'course',
             status: 'pending',
-            userId: user.id,
+            userId: user.data.id,
         })
         // Step 4: Return the payment record
         await payment.save()
@@ -124,7 +138,7 @@ router.post(
 
 /**
  * @swagger
- * /materials/{materialId}/users/{userId}:
+ * /materials/{materialId}/users/{username}:
  *   post:
  *     summary: Create a payment record for a user's material purchase
  *     tags:
@@ -135,11 +149,11 @@ router.post(
  *         required: true
  *         type: string
  *         description: ID of the material
- *       - name: userId
+ *       - name: Username
  *         in: path
  *         required: true
  *         type: string
- *         description: ID of the user
+ *         description: Username of the user
  *     responses:
  *       200:
  *         description: Payment record created successfully
@@ -160,9 +174,9 @@ router.post(
  *           $ref: '#/definitions/Error500'
  */
 router.post(
-    '/materials/:materialId/users/:userId',
+    '/materials/:materialId/users/:username',
     async (req: Request, res: Response) => {
-        const { materialId, userId } = req.params
+        const { materialId, username } = req.params
 
         // Step 1: Fetch the material from the database
         const material = getCourseById(materialId)
@@ -170,16 +184,18 @@ router.post(
             return res.status(404).json({ error: 'Material not found' })
         }
         // Step 2: Fetch the user from the database
-        const user = await User.findOne({
-            _id: userId,
-        }).exec()
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
+
         if (!user) {
             return res.status(404).json({ error: 'User not found' })
         }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            customer_email: user.email,
+            customer_email: user.data.email,
             line_items: [
                 {
                     price_data: {
@@ -204,28 +220,28 @@ router.post(
             referenceId: material.id,
             referenceType: 'material',
             status: 'pending',
-            userId: user.id,
+            userId: user.data.id,
         })
         // Step 4: Return the payment record
         await payment.save()
 
-        return res.status(200).json({ materialId, userId, url: session.url })
+        return res.status(200).json({ materialId, user, url: session.url })
     }
 )
 
 /**
  * @swagger
- * /history/users/{userId}:
+ * /history/users/{username}:
  *   get:
  *     summary: Get payment history for a user
  *     tags:
  *       - History
  *     parameters:
- *       - name: userId
+ *       - name: username
  *         in: path
  *         required: true
  *         type: string
- *         description: ID of the user
+ *         description: Username of the user
  *     responses:
  *       200:
  *         description: Payment history retrieved successfully
@@ -245,19 +261,20 @@ router.post(
  *         schema:
  *           $ref: '#/definitions/Error500'
  */
-router.get('/history/users/:userId', async (req: Request, res: Response) => {
-    const { userId } = req.params
+router.get('/history/users/:username', async (req: Request, res: Response) => {
+    const { username } = req.params
 
     // Step 1: Fetch the user from the database
-    const user = await User.findOne({
-        _id: userId,
-    }).exec()
+    const userService = new UserService()
+    const user = await userService
+        .login()
+        .then(() => userService.getUserByUsername(username))
     if (!user) {
         return res.status(404).json({ error: 'User not found' })
     }
     // Step 2: Fetch the payment records for the user
     const payments = await Payment.find({
-        userId: userId,
+        userId: user.data.id,
     })
     if (!payments) {
         return res.status(404).json({ error: 'Payments not found' })
@@ -268,7 +285,40 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
 
 /**
  * @swagger
- * /{paymentId}/user/{userId}:
+ * /plans:
+ *   get:
+ *     summary: Get all plans
+ *     tags:
+ *       - Plans
+ *     responses:
+ *       200:
+ *         description: Plans retrieved successfully
+ *         schema:
+ *           type: object
+ *           properties:
+ *             plan:
+ *               $ref: '#/definitions/Plan'
+ *       404:
+ *         description: User or payment not found
+ *         schema:
+ *           $ref: '#/definitions/Error404'
+ *       500:
+ *         description: Some server error
+ *         schema:
+ *           $ref: '#/definitions/Error500'
+ */
+
+router.get('/plans', async (req: Request, res: Response) => {
+    const plans = await PricePlan.find()
+    if (!plans) {
+        return res.status(404).json({ error: 'Plans not found' })
+    }
+    return res.status(200).json({ plans })
+})
+
+/**
+ * @swagger
+ * /{paymentId}/user/{username}:
  *   get:
  *     summary: Get a specific payment record for a user
  *     tags:
@@ -283,7 +333,7 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
  *         in: path
  *         required: true
  *         type: string
- *         description: ID of the user
+ *         description: Username of the user
  *     responses:
  *       200:
  *         description: Payment record retrieved successfully
@@ -301,26 +351,30 @@ router.get('/history/users/:userId', async (req: Request, res: Response) => {
  *         schema:
  *           $ref: '#/definitions/Error500'
  */
-router.get('/:paymentId/user/:userId', async (req: Request, res: Response) => {
-    const { paymentId, userId } = req.params
+router.get(
+    '/:paymentId/user/:username',
+    async (req: Request, res: Response) => {
+        const { paymentId, username } = req.params
 
-    // Step 1: Fetch the user from the database
-    const user = await User.findOne({
-        _id: userId,
-    }).exec()
-    if (!user) {
-        return res.status(404).json({ error: 'User not found' })
+        // Step 1: Fetch the user from the database
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' })
+        }
+        // Step 2: Fetch the payment record from the database
+        const payment = await Payment.findOne({
+            _id: paymentId,
+            userId: user.data.id,
+        }).exec()
+        if (!payment) {
+            return res.status(404).json({ error: 'Payment not found' })
+        }
+        // Step 3: Return the payment record
+        return res.status(200).json({ payment })
     }
-    // Step 2: Fetch the payment record from the database
-    const payment = await Payment.findOne({
-        _id: paymentId,
-        userId: userId,
-    }).exec()
-    if (!payment) {
-        return res.status(404).json({ error: 'Payment not found' })
-    }
-    // Step 3: Return the payment record
-    return res.status(200).json({ payment })
-})
+)
 
 export default router

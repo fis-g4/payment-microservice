@@ -23,7 +23,7 @@ security:
 paths:
   /payments/health: {}
   get:
-    summary: Get all plans
+    summary: Health check for the payments API
   properties: {}
   status: {}
   type:
@@ -114,6 +114,40 @@ paths:
                 type: string
         "404":
           description: Material or user not found
+          schema:
+            $ref: "#/definitions/Error404"
+        "500":
+          description: Some server error
+          schema:
+            $ref: "#/definitions/Error500"
+  /plans/{planId}/users/{username}:
+    post:
+      summary: Create a payment record for a user plan purchase
+      tags:
+        - Plans
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          type: string
+          description: ID of the plan
+        - name: username
+          in: path
+          required: true
+          type: string
+          description: Username of the user
+      responses:
+        "200":
+          description: Payment record created successfully
+          schema:
+            type: object
+            properties:
+              materialId:
+                type: string
+              userId:
+                type: string
+        "404":
+          description: Plan or user not found
           schema:
             $ref: "#/definitions/Error404"
         "500":

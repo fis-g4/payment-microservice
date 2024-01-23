@@ -23,7 +23,7 @@ security:
 paths:
   /payments/health: {}
   get:
-    summary: Get all plans
+    summary: Health check for the payments API
   properties: {}
   status: {}
   type:
@@ -151,7 +151,7 @@ paths:
             $ref: "#/definitions/Error500"
   /plans:
     get:
-      summary: Get all plans
+      summary: Get all plans available for purchase
       tags:
         - Plans
       responses:

@@ -287,7 +287,7 @@ router.get('/history/users/:username', async (req: Request, res: Response) => {
  * @swagger
  * /plans:
  *   get:
- *     summary: Get all plans
+ *     summary: Get all plans available for purchase
  *     tags:
  *       - Plans
  *     responses:
@@ -307,7 +307,6 @@ router.get('/history/users/:username', async (req: Request, res: Response) => {
  *         schema:
  *           $ref: '#/definitions/Error500'
  */
-
 router.get('/plans', async (req: Request, res: Response) => {
     const plans = await PricePlan.find()
     if (!plans) {

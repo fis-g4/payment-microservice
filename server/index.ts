@@ -7,8 +7,6 @@ import swaggerui from 'swagger-ui-express'
 import yaml from 'yaml'
 import './db/conn'
 import payments from './routes/payments'
-import plans from './routes/plans'
-import users from './routes/users'
 
 import { generateToken, verifyToken } from './utils/jwt'
 
@@ -119,6 +117,10 @@ app.use(
     swaggerUI.serve,
     swaggerUI.setup(swaggerDocs, { explorer: true })
 )
-app.use(API_VERSION + '/users', users)
 app.use(API_VERSION + '/payments', payments)
-app.use(API_VERSION + '/plans', plans)
+
+app.use((req: Request, res: Response) => {
+    res.status(404).send({
+        message: 'Not Found',
+    })
+})

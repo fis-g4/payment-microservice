@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express'
+import { isValidObjectId } from 'mongoose'
 import { Payment } from '../db/models/payment'
 import { PricePlan } from '../db/models/plan'
 import { getCourseById } from '../mocks/courses.mock'
@@ -226,6 +227,111 @@ router.post(
         await payment.save()
 
         return res.status(200).json({ materialId, user, url: session.url })
+    }
+)
+
+/**
+ * @swagger
+ * /plans/{planId}/users/{username}:
+ *   post:
+ *     summary: Create a payment record for a user plan purchase
+ *     tags:
+ *       - Plans
+ *     parameters:
+ *       - name: planId
+ *         in: path
+ *         required: true
+ *         type: string
+ *         description: ID of the plan
+ *       - name: username
+ *         in: path
+ *         required: true
+ *         type: string
+ *         description: Username of the user
+ *     responses:
+ *       200:
+ *         description: Payment record created successfully
+ *         schema:
+ *           type: object
+ *           properties:
+ *             materialId:
+ *               type: string
+ *             userId:
+ *               type: string
+ *       404:
+ *         description: Plan or user not found
+ *         schema:
+ *           $ref: '#/definitions/Error404'
+ *       500:
+ *         description: Some server error
+ *         schema:
+ *           $ref: '#/definitions/Error500'
+ */
+router.post(
+    '/plans/:planId/users/:username',
+    async (req: Request, res: Response) => {
+        const { planId, username } = req.params
+        // Check plan id is valid
+        const planIdValid = isValidObjectId(planId)
+        if (!planIdValid) {
+            return res.status(404).json({ error: 'Plan not found' })
+        }
+        // Step 1: Fetch the plans from the database
+        const plan = await PricePlan.findOne({
+            _id: planId,
+        }).exec()
+        if (!plan) {
+            return res.status(404).json({ error: 'Plan not found' })
+        }
+
+        // Step 2: Fetch the user from the database
+        const userService = new UserService()
+        const user = await userService
+            .login()
+            .then(() => userService.getUserByUsername(username))
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' })
+        }
+
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            customer_email: user.data.email,
+            line_items: [
+                {
+                    price_data: {
+                        currency: plan.currency,
+                        product_data: {
+                            name: plan.name,
+                        },
+                        unit_amount: Math.round(plan.price * 100),
+                    },
+                    quantity: 1,
+                },
+            ],
+            mode: 'payment',
+            success_url: 'https://example.com/success',
+            cancel_url: 'https://example.com/cancel',
+        })
+
+        // Step 3: Create a payment record and set the status to inactive for the previous plan
+        await Payment.updateMany(
+            { userId: user.data.id, status: 'active' },
+            { status: 'inactive' }
+        )
+
+        const payment = Payment.build({
+            amount: plan.price,
+            currency: plan.currency,
+            referenceId: plan.id,
+            referenceType: 'plan',
+            status: 'active',
+            userId: user.data.id,
+        })
+        // Step 4: Return the payment record
+        await payment.save()
+
+        return res.status(200).json({ planId, user, url: session.url })
     }
 )
 

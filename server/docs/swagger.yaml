@@ -11,7 +11,7 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
 servers:
-  - url: http://localhost:8000
+  - url: http://localhost:8000/v1/payments
 components:
   securitySchemes:
     bearerAuth:
@@ -23,43 +23,37 @@ security:
 paths:
   /payments/health: {}
   get:
-    summary: Health check for the payments API
-  /payments/plans/{planId}/users/{userId}:
-    post:
-      summary: Create a payment record for a user's plan
-      tags:
-        - Payments
-      parameters:
-        - name: planId
-          in: path
-          required: true
-          type: string
-          description: ID of the plan
-        - name: userId
-          in: path
-          required: true
-          type: string
-          description: ID of the user
-      responses:
-        "200":
-          description: Payment record created successfully
-          schema:
-            type: object
-            properties:
-              payment:
-                $ref: "#/definitions/Payment"
-        "400":
-          description: There was an error with the request
-          schema:
-            $ref: "#/definitions/Error400"
-        "404":
-          description: Plan or user not found
-          schema:
-            $ref: "#/definitions/Error404"
-        "500":
-          description: Some server error
-          schema:
-            $ref: "#/definitions/Error500"
+    summary: Get all plans
+  properties: {}
+  status: {}
+  type:
+    "0": s
+    "1": t
+    "2": r
+    "3": i
+    "4": n
+    "5": g
+  description:
+    "0": S
+    "1": t
+    "2": a
+    "3": t
+    "4": u
+    "5": s
+    "6": " "
+    "7": o
+    "8": f
+    "9": " "
+    "10": t
+    "11": h
+    "12": e
+    "13": " "
+    "14": A
+    "15": P
+    "16": I
+  example:
+    "0": o
+    "1": k
   /courses/{courseId}/users/{userId}:
     post:
       summary: Create a payment record for a user's course enrollment
@@ -71,11 +65,11 @@ paths:
           required: true
           type: string
           description: ID of the course
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
-          description: ID of the user
+          description: Username of the user
       responses:
         "200":
           description: Payment record created successfully
@@ -92,7 +86,7 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /materials/{materialId}/users/{userId}:
+  /materials/{materialId}/users/{username}:
     post:
       summary: Create a payment record for a user's material purchase
       tags:
@@ -103,11 +97,11 @@ paths:
           required: true
           type: string
           description: ID of the material
-        - name: userId
+        - name: Username
           in: path
           required: true
           type: string
-          description: ID of the user
+          description: Username of the user
       responses:
         "200":
           description: Payment record created successfully
@@ -126,17 +120,17 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /history/users/{userId}:
+  /history/users/{username}:
     get:
       summary: Get payment history for a user
       tags:
         - History
       parameters:
-        - name: userId
+        - name: username
           in: path
           required: true
           type: string
-          description: ID of the user
+          description: Username of the user
       responses:
         "200":
           description: Payment history retrieved successfully
@@ -155,7 +149,28 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
-  /{paymentId}/user/{userId}:
+  /plans:
+    get:
+      summary: Get all plans
+      tags:
+        - Plans
+      responses:
+        "200":
+          description: Plans retrieved successfully
+          schema:
+            type: object
+            properties:
+              plan:
+                $ref: "#/definitions/Plan"
+        "404":
+          description: User or payment not found
+          schema:
+            $ref: "#/definitions/Error404"
+        "500":
+          description: Some server error
+          schema:
+            $ref: "#/definitions/Error500"
+  /{paymentId}/user/{username}:
     get:
       summary: Get a specific payment record for a user
       tags:
@@ -170,7 +185,7 @@ paths:
           in: path
           required: true
           type: string
-          description: ID of the user
+          description: Username of the user
       responses:
         "200":
           description: Payment record retrieved successfully
@@ -187,6 +202,17 @@ paths:
           description: Some server error
           schema:
             $ref: "#/definitions/Error500"
+responses:
+  "200":
+    description: Health check successful
+  schema: {}
+  type:
+    "0": o
+    "1": b
+    "2": j
+    "3": e
+    "4": c
+    "5": t
 tags:
   - Payments
   - name: Payments

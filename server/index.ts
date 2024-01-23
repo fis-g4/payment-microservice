@@ -43,7 +43,8 @@ const swaggerOptions = {
         },
         servers: [
             {
-                url: process.env.BASE_URL ?? 'http://localhost:8000',
+                url:
+                    process.env.BASE_URL ?? 'http://localhost:8000/v1/payments',
             },
         ],
         components: {

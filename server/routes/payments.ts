@@ -378,8 +378,8 @@ router.post(
             'users_microservice',
             'notificationNewPlanPayment',
             JSON.stringify({
-                planType: planName,
-                userName: username,
+                plan: planName,
+                username: username,
             }),
             process.env.API_KEY ?? ''
         )
@@ -579,7 +579,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
         case 'payment_intent.succeeded':
             const paymentIntent = event.data.object
             const payment = await Payment.findOne({
-                externalPaymentId: paymentIntent.id,
+                externalPaymentIntentId: paymentIntent.id,
             }).exec()
             if (!payment) {
                 return res.status(404).json({ error: 'Payment not found' })
@@ -595,14 +595,28 @@ router.post('/webhook', async (req: Request, res: Response) => {
         // ... handle other event types
         case 'checkout.session.completed':
             const session = event.data.object
-            const paymentSession = await Payment.findOne({
+            const metadata = session.metadata
+            // Deactivate other active plans
+            if (metadata.type === 'plan') {
+                await Payment.updateMany(
+                    {
+                        userId: metadata.userId,
+                        status: 'active',
+                    },
+                    {
+                        status: 'inactive',
+                    }
+                )
+            }
+            const payment2 = await Payment.findOne({
                 externalPaymentId: session.id,
             }).exec()
-            if (!paymentSession) {
+            if (!payment2) {
                 return res.status(404).json({ error: 'Payment not found' })
             }
-            paymentSession.externalPaymentIntentId = session.payment_intent
-            await paymentSession.save()
+            payment2.status = 'active'
+            payment2.externalPaymentIntentId = session.payment_intent
+            await payment2.save()
             console.log('Checkout session completed!')
             break
         default:

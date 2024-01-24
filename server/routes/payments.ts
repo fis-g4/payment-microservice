@@ -134,6 +134,17 @@ router.post(
         // Step 4: Return the payment record
         await payment.save()
 
+        // Send rabbit message to courses_microservice
+        await sendMessage(
+            'courses_microservice',
+            'publishNewCourseAccess',
+            JSON.stringify({
+                courseId: course.id,
+                userName: username,
+            }),
+            process.env.API_KEY ?? ''
+        )
+
         return res.status(200).json({ payment, url: session.url })
     }
 )
@@ -345,8 +356,7 @@ router.post(
             'users_microservice',
             'notificationNewPlanPayment',
             JSON.stringify({
-                planName,
-                userId: user.data.id,
+                planType: planName,
                 userName: username,
             }),
             process.env.API_KEY ?? ''
@@ -503,5 +513,27 @@ router.get(
         return res.status(200).json({ payment })
     }
 )
+
+router.post('/webhook', async (req: Request, res: Response) => {
+    const event = req.body
+    console.log(event)
+    // Handle the event
+    switch (event.type) {
+        case 'payment_intent.succeeded':
+            const paymentIntent = event.data.object
+            console.log('PaymentIntent was successful!')
+            break
+        case 'payment_method.attached':
+            const paymentMethod = event.data.object
+            console.log('PaymentMethod was attached to a Customer!')
+            break
+        // ... handle other event types
+        default:
+            console.log(`Unhandled event type ${event.type}`)
+    }
+
+    // Return a 200 response to acknowledge receipt of the event
+    res.json({ received: true })
+})
 
 export default router

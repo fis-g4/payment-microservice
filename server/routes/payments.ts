@@ -118,8 +118,13 @@ router.post(
                 },
             ],
             mode: 'payment',
-            success_url: 'https://example.com/success',
-            cancel_url: 'https://example.com/cancel',
+            success_url: 'https://fisg4.javiercavlop.com/',
+            cancel_url: 'https://fisg4.javiercavlop.com/',
+            metadata: {
+                type: 'course',
+                courseId: course.id,
+                userName: username,
+            },
         })
 
         // Step 3: Create a payment record
@@ -129,7 +134,9 @@ router.post(
             referenceId: course.id,
             referenceType: 'course',
             status: 'pending',
-            userId: user.data.id,
+            userId: user.data._id,
+            userName: username,
+            externalPaymentId: session.id,
         })
         // Step 4: Return the payment record
         await payment.save()
@@ -233,7 +240,9 @@ router.post(
             referenceId: material.id,
             referenceType: 'material',
             status: 'pending',
-            userId: user.data.id,
+            userId: user.data._id,
+            userName: username,
+            externalPaymentId: session.id,
         })
         // Step 4: Return the payment record
         await payment.save()
@@ -317,18 +326,29 @@ router.post(
                             name: plan.name,
                         },
                         unit_amount: Math.round(plan.price * 100),
+                        recurring: {
+                            interval: 'month',
+                            interval_count: 1,
+                        },
                     },
                     quantity: 1,
                 },
             ],
-            mode: 'payment',
-            success_url: 'https://fisg4.javiercavlop.com/',
-            cancel_url: 'https://fisg4.javiercavlop.com/',
+            mode: 'subscription',
+            metadata: {
+                type: 'plan',
+                planId: plan.id,
+                userName: username,
+                userId: user.data._id,
+                planName: plan.name,
+            },
+            success_url: 'https://fisg4.javiercavlop.com/plans',
+            cancel_url: 'https://fisg4.javiercavlop.com/plans',
         })
 
         // Step 3: Create a payment record and set the status to inactive for the previous plan
         await Payment.updateMany(
-            { userId: user.data.id, status: 'active' },
+            { userId: user.data._id, status: 'active' },
             { status: 'inactive' }
         )
 
@@ -346,8 +366,10 @@ router.post(
             currency: plan.currency,
             referenceId: plan.id,
             referenceType: 'plan',
-            status: 'active',
-            userId: user.data.id,
+            status: 'pending',
+            userId: user.data._id,
+            userName: username,
+            externalPaymentId: session.id,
         })
         // Step 4: Return the payment record
         await payment.save()
@@ -411,13 +433,48 @@ router.get('/history/users/:username', async (req: Request, res: Response) => {
     }
     // Step 2: Fetch the payment records for the user
     const payments = await Payment.find({
-        userId: user.data.id,
+        userId: user.data._id,
     })
-    if (!payments) {
+
+    const data = payments.map((payment) => {
+        return {
+            amount: payment.amount,
+            currency: payment.currency,
+            referenceId: payment.referenceId,
+            referenceType: payment.referenceType,
+            status: payment.status,
+            userName: payment.userName,
+            externalPaymentId: payment.externalPaymentId,
+            externalPaymentIntentId: payment.externalPaymentIntentId,
+            referenceName: '',
+        }
+    })
+
+    // Populate if referenceType is course or plan
+    for (const d of data) {
+        if (d.referenceType === 'course') {
+            const courseService = new CourseService()
+            const course = await courseService
+                .login()
+                .then(() => courseService.getCourseById(d.referenceId))
+            if (course) {
+                d.referenceName = course.name
+            }
+        } else if (d.referenceType === 'plan') {
+            const plan = await PricePlan.findOne({
+                _id: d.referenceId,
+            }).exec()
+            if (plan) {
+                d.referenceName = plan.name
+            }
+        }
+    }
+
+    if (!data) {
         return res.status(404).json({ error: 'Payments not found' })
     }
     // Step 3: Return the payment records
-    return res.status(200).json({ payments })
+    return res.status(200).json({ data })
 })
 
 /**
@@ -504,7 +561,7 @@ router.get(
         // Step 2: Fetch the payment record from the database
         const payment = await Payment.findOne({
             _id: paymentId,
-            userId: user.data.id,
+            userId: user.data._id,
         }).exec()
         if (!payment) {
             return res.status(404).json({ error: 'Payment not found' })
@@ -521,6 +578,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
     switch (event.type) {
         case 'payment_intent.succeeded':
             const paymentIntent = event.data.object
+            const payment = await Payment.findOne({
+                externalPaymentId: paymentIntent.id,
+            }).exec()
+            if (!payment) {
+                return res.status(404).json({ error: 'Payment not found' })
+            }
+            payment.status = 'active'
+            await payment.save()
             console.log('PaymentIntent was successful!')
             break
         case 'payment_method.attached':
@@ -528,6 +593,18 @@ router.post('/webhook', async (req: Request, res: Response) => {
             console.log('PaymentMethod was attached to a Customer!')
             break
         // ... handle other event types
+        case 'checkout.session.completed':
+            const session = event.data.object
+            const paymentSession = await Payment.findOne({
+                externalPaymentId: session.id,
+            }).exec()
+            if (!paymentSession) {
+                return res.status(404).json({ error: 'Payment not found' })
+            }
+            paymentSession.externalPaymentIntentId = session.payment_intent
+            await paymentSession.save()
+            console.log('Checkout session completed!')
+            break
         default:
             console.log(`Unhandled event type ${event.type}`)
     }

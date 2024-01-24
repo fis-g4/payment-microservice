@@ -4,20 +4,27 @@ const { Schema } = mongoose
 
 interface IPayment {
     userId: string
+    userName: string
     referenceType: string
     referenceId: string
     currency: string
     amount: number
     status: string
+    externalPaymentId: string
+    externalPaymentIntentId?: string
+    referenceName?: string
 }
 
 interface PaymentDoc extends mongoose.Document {
     userId: string
+    userName: string
     referenceType: string
     referenceId: string
     currency: string
     amount: number
     status: string
+    externalPaymentId: string
+    externalPaymentIntentId?: string
 }
 
 interface PaymentModelInterface extends mongoose.Model<PaymentDoc> {
@@ -41,6 +48,15 @@ const paymentSchema = new Schema({
         type: Number,
     },
     status: {
+        type: String,
+    },
+    userName: {
+        type: String,
+    },
+    externalPaymentId: {
+        type: String,
+    },
+    externalPaymentIntentId: {
         type: String,
     },
 })

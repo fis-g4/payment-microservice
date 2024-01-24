@@ -3,7 +3,7 @@ name: Deploy to GCE
 on:
     push:
         branches:
-            - 'develop'
+            - 'main'
 
 env:
     ENV_CONFIGURATION: ${{ secrets.ENV_CONFIGURATION }}

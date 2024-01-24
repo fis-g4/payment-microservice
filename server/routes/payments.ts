@@ -375,7 +375,7 @@ router.post(
         await payment.save()
 
         await sendMessage(
-            'users_microservice',
+            'users-microservice',
             'notificationNewPlanPayment',
             JSON.stringify({
                 plan: planName,

@@ -128,3 +128,5 @@ app.use((req: Request, res: Response) => {
         message: 'Not Found',
     })
 })
+
+module.exports = app

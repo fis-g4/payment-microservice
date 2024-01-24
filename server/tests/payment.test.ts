@@ -1,9 +1,27 @@
 import dotenv from 'dotenv'
+import { MongoMemoryServer } from 'mongodb-memory-server'
+import mongoose from 'mongoose'
 import request from 'supertest'
+import { Payment } from '../db/models/payment'
+import { PricePlan } from '../db/models/plan'
 
 dotenv.config()
 
-const BASE_URL = process.env.BASE_URL ?? 'http://localhost:8000/v1/payments'
+const BASE_URL = '/v1/payments'
+
+enum PlanType {
+    FREE = 'FREE',
+    PREMIUM = 'PREMIUM',
+    PRO = 'PRO',
+}
+
+enum UserRole {
+    USER = 'USER',
+    ADMIN = 'ADMIN',
+}
+
+const TOKEN =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwYXlsb2FkIjp7ImZpcnN0TmFtZSI6IkpvaG4iLCJsYXN0TmFtZSI6IkRvZSIsInVzZXJuYW1lIjoiam9obmRvZTEyMyIsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJwcm9maWxlUGljdHVyZSI6Imh0dHBzOi8vc3RvcmFnZS5nb29nbGVhcGlzLmNvbS9maXNnNC11c2VyLWltYWdlcy1idWNrZXQvZGVmYXVsdC11c2VyLmpwZyIsImNvaW5zQW1vdW50IjowLCJyb2xlIjoiVVNFUiIsInBsYW4iOiJQUk8ifSwiaWF0IjoxNzA2MDk1OTU1LCJleHAiOjE3MDYxODIzNTV9.uy7VYlJpQ66ZowMRjx0LpKPpn9G2EV8ezRsh3ktIdGY'
 
 const TEST_URLS = {
     getSpecificPayment: `${BASE_URL}/:paymentId/user/:username`,
@@ -20,67 +38,148 @@ const PAYMENT_DATA = {
     username: 'test',
 }
 
-const USER_TO_GENERATE_TOKEN = {
-    username: 'johndoe',
-    password: 'johndoepassword',
+let mongod: any
+
+const app = require('../index')
+
+const setupSamplePlans = async () => {
+    const plans = [
+        {
+            name: 'Free',
+            description: 'Free plan',
+            price: 0,
+            currency: 'USD',
+            features: ['Free'],
+        },
+        {
+            name: 'Premium',
+            description: 'Premium plan',
+            price: 10,
+            currency: 'USD',
+            features: ['Premium'],
+        },
+        {
+            name: 'Pro',
+            description: 'Pro plan',
+            price: 20,
+            currency: 'USD',
+            features: ['Pro'],
+        },
+    ]
+
+    await PricePlan.insertMany(plans)
 }
 
+jest.mock('../service/user', () => {
+    return {
+        UserService: jest.fn().mockImplementation(() => {
+            return {
+                login: jest.fn(),
+                getUserByUsername: jest.fn().mockResolvedValue({
+                    data: {
+                        _id: 'user_id',
+                        username: 'test',
+                        email: 'user@example.com',
+                    },
+                }),
+            }
+        }),
+    }
+})
+
+jest.mock('../service/courses', () => {
+    return {
+        getCourseById: jest.fn().mockReturnValue({
+            id: 'material_id',
+            name: 'Material Name',
+            price: 4.99,
+            currency: 'USD',
+        }),
+    }
+})
+
+beforeAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+        await mongoose.disconnect()
+    }
+
+    mongod = await MongoMemoryServer.create()
+    const uri = mongod.getUri()
+    await mongoose.connect(uri)
+
+    await setupSamplePlans()
+})
+
+afterAll(async () => {
+    const server = app.server
+    if (server) {
+        await new Promise((resolve, reject) => {
+            server.close((err: any) => {
+                if (err) {
+                    return reject(err)
+                }
+                resolve(true)
+            })
+        })
+        console.log('Http server closed.')
+    }
+    await mongoose.disconnect()
+})
+
 describe('Payment', () => {
-    let token = ''
-
-    beforeAll(async () => {
-        const res = await request(`${process.env.USER_SERVICE_BASE_URL}/new`)
-            .post('/login')
-            .send(USER_TO_GENERATE_TOKEN)
-        token = res.body.token
+    it('should return 200 OK status', async () => {
+        const res = await request(app).get(`${BASE_URL}/health`)
+        expect(res.status).toEqual(200)
     })
 
-    describe('GET /payments/:paymentId/user/:username', () => {
-        it('should return 200 OK', async () => {
-            const res = await request(
-                TEST_URLS.getSpecificPayment
+    it('should return 200 OK status for get specific payment', async () => {
+        const res = await request(app)
+            .get(
+                `${TEST_URLS.getSpecificPayment
                     .replace(':paymentId', PAYMENT_DATA.paymentId)
-                    .replace(':username', PAYMENT_DATA.username)
-            ).get('')
-            expect(res.status).toBe(200)
+                    .replace(':username', PAYMENT_DATA.username)}`
+            )
+            .set('Authorization', `Bearer ${TOKEN}`)
+        expect(res.status).toEqual(200)
+    })
+
+    it('should create a payment record and return session URL', async () => {
+        const response = await request(app)
+            .post('/courses/course_id/users/testuser')
+            .expect(200)
+
+        // Verificar que se haya creado el registro de pago
+        expect(Payment.build).toHaveBeenCalledWith({
+            amount: 9.99,
+            currency: 'EUR',
+            referenceId: 'course_id',
+            referenceType: 'course',
+            status: 'pending',
+            userId: 'user_id',
+            userName: 'testuser',
+            externalPaymentId: 'session_id',
         })
     })
 
-    describe('POST /payments/course/:courseId/user/:username', () => {
-        it('should return 201 CREATED', async () => {
-            const res = await request(
-                TEST_URLS.createCoursePayment
-                    .replace(':courseId', PAYMENT_DATA.courseId)
-                    .replace(':username', PAYMENT_DATA.username)
-            ).post('')
-            expect(res.status).toBe(201)
-        })
-    })
+    it('should create a payment record and return session URL', async () => {
+        const response = await request(app)
+            .post('/materials/material_id/users/testuser')
+            .expect(200)
 
-    describe('POST /payments/material/:materialId/user/:username', () => {
-        it('should return 201 CREATED', async () => {
-            const res = await request(
-                TEST_URLS.createMaterialPayment
-                    .replace(':materialId', PAYMENT_DATA.materialId)
-                    .replace(':username', PAYMENT_DATA.username)
-            ).post('')
-            expect(res.status).toBe(201)
+        // Verificar que se haya creado el registro de pago
+        expect(Payment.build).toHaveBeenCalledWith({
+            amount: 4.99,
+            currency: 'USD',
+            referenceId: 'material_id',
+            referenceType: 'material',
+            status: 'pending',
+            userId: 'user_id',
+            userName: 'testuser',
+            externalPaymentId: 'session_id',
         })
-    })
 
-    describe('GET /payments/history/user/:username', () => {
-        it('should return 200 OK', async () => {
-            const res = await request(
-                TEST_URLS.getHistory.replace(':username', PAYMENT_DATA.username)
-            ).get('')
-            expect(res.status).toBe(200)
-        })
-    })
-
-    describe('GET /payments/plans', () => {
-        it('should return 200 OK', async () => {
-            const res = await request(TEST_URLS.getPlans).get('')
-            expect(res.status).toBe(200)
-        })
+        // Verificar que la respuesta contenga el registro de pago, el ID del material y el usuario
+        expect(response.body.materialId).toBe('material_id')
+        expect(response.body.user).toBeDefined()
     })
 })

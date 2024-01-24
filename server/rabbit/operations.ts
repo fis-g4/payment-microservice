@@ -19,8 +19,8 @@ async function sendMessage(
             },
             {
                 headers: {
-                    'Content-Type': 'application/json',
                     'x-api-key': API_KEY,
+                    'Content-Type': 'application/json',
                 },
             }
         )

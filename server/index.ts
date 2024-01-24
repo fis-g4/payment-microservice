@@ -82,7 +82,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
     // If url starts with /v1/payments/docs, then skip the token verification
     const regexDocs = new RegExp('/v1/payments/docs/.*')
-    if (regexDocs.test(req.url) || req.url === '/v1/payments/check') {
+    if (
+        regexDocs.test(req.url) ||
+        req.url === '/v1/payments/check' ||
+        req.url === '/v1/payments/webhook'
+    ) {
         next()
         return
     }
@@ -124,3 +128,5 @@ app.use((req: Request, res: Response) => {
         message: 'Not Found',
     })
 })
+
+module.exports = app
